@@ -12,6 +12,7 @@ class GameState:
         self.move_log = []
 
     def make_move(self,move):
+
         if self.x_to_move:
             if self.board[move.square_row][move.square_col].isdigit() and move not in self.move_log:
                 self.board[move.square_row][move.square_col] = 'x'
@@ -27,7 +28,8 @@ class GameState:
         for row in self.board:
             if all(square == symbol for square in row):
                 return True
-                        # Check columns
+
+        # Check columns
         for col in range(3):
             if all(self.board[row][col] == symbol for row in range(3)):
                 return True
@@ -40,17 +42,16 @@ class GameState:
 
         return False
         
-    def pause(self):
-        self.paused = True
-
-    def resume(self):
-        self.paused = False
 
 class Move:
     def __init__(self,sq,board):
         self.square_row = sq[0]
         self.square_col = sq[1]
-        self.move_made = board[self.square_row][self.square_col] 
+        if [self.square_row,self.square_col] not in [[0,0],[0,1],[1,0],[1,1],[1,2],[2,0],[0,2],[2,1],[2,2]]:
+            self.move_made = ['invalid']
+
+        else:
+            self.move_made = board[self.square_row][self.square_col]
 
 class Player:
     def __init__(self,player,score):
