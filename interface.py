@@ -1,5 +1,5 @@
 import pygame
-import engine
+import environment
 from pygame.locals import *
 import sys
 
@@ -10,17 +10,18 @@ MAX_FPS = 60
 IMAGES = {}
 
 
-x_score = engine.Player('x',0) # Player object X
-o_score = engine.Player('o',0) # Player object O
+x_score = environment.Player('x',0) # Player object X
+o_score = environment.Player('o',0) # Player object O
 
 # Load images for the x and o pieces
 def load_images():
     pieces = ['x','o']
     for piece in pieces:
-        IMAGES[piece] = pygame.transform.scale(pygame.image.load('Tik-Tak-Toe-AI/Assests/' + piece + '.png'),(SQ_SIZE,SQ_SIZE))
+        IMAGES[piece] = pygame.transform.scale(pygame.image.load('./Assests/' + piece + '.png'),(SQ_SIZE,SQ_SIZE))
 def main():
     pygame.init()
     load_images()
+    
 
     ##############
     # initialised variables
@@ -32,31 +33,27 @@ def main():
     start_time = pygame.time.get_ticks() # get the initial time
     counter = 10 # turn counter
     sq_selected = () # which square will be selected
-    gs = engine.GameState() # initialise the GameState class
+    #gs = engine.GameState() # initialise the GameState class
     move = []
     ##############
+
+    # environment variables
+    env = environment.TikTacToeEnv()
+    observation = env.reset()
+
     
 
     while running:
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 running = False
-        #mouse stuff
             elif e.type == pygame.MOUSEBUTTONDOWN:
-                location = pygame.mouse.get_pos()
-                col = (location[0]-border_size)//SQ_SIZE
-                row = (location[1]-border_size)//SQ_SIZE
-                if sq_selected == (row,col):
-                    sq_selected = ()
-                else:
-                    sq_selected = (row,col)
-                move = engine.Move(sq_selected,gs.board)
-
-                
+                sq_selected = get_user_action(border_size)
+                move = environment.Move(sq_selected,env.board)
                 if move.move_made != ['invalid']:
-                    gs.make_move(move)
+                    env.make_move(move)
                     counter = 10
-                
+                observation,reward,done,info = env.step(sq_selected)
                 sq_selected = ()
             
         elapsed_time = (pygame.time.get_ticks() - start_time) / 1000
@@ -64,11 +61,9 @@ def main():
         start_time = pygame.time.get_ticks()
         clock.tick(MAX_FPS)
 
-
-
-        if gs.winner(x_score.player):
+        if env.winner(x_score.player):
             x_score.score += 1
-            draw_game_state(screen,gs,border_size,counter,x_score,o_score)
+            draw_game_state(screen,env,border_size,counter,x_score,o_score)
             draw_winner(screen,'X')
             pygame.display.update()
             while True:
@@ -83,9 +78,9 @@ def main():
                         
 
 
-        if gs.winner(o_score.player):
+        if env.winner(o_score.player):
             o_score.score += 1
-            draw_game_state(screen,gs,border_size,counter,x_score,o_score)
+            draw_game_state(screen,env,border_size,counter,x_score,o_score)
             draw_winner(screen,'O')
             pygame.display.update()
             while True:
@@ -98,21 +93,20 @@ def main():
                         if __name__ == "__main__":
                             main()
 
-        draw_game_state(screen,gs,border_size,counter,x_score,o_score)
+        draw_game_state(screen,env,border_size,counter,x_score,o_score)
 
 
         pygame.display.flip()
 
-def draw_game_state(screen,gs,border_size,counter,x,o):
+def draw_game_state(screen,env,border_size,counter,x,o):
     draw_board(screen,border_size)
-    draw_pieces(screen,gs.board,border_size)
+    draw_pieces(screen,env.board,border_size)
     draw_clock(screen,counter)
-    draw_player_turn(screen,gs.x_to_move)
+    draw_player_turn(screen,env.x_to_move)
     draw_score(screen,x,o)
     
 # Draw the board on the screen
 def draw_board(screen,border_size):
-
     # Clear the outer border area before drawing the new border
     screen.fill((0, 0, 0), pygame.Rect(0, 0, WIDTH + border_size * 2, border_size))
     screen.fill((0, 0, 0), pygame.Rect(0, HEIGHT + border_size, WIDTH + border_size * 2, border_size))
@@ -172,7 +166,6 @@ def draw_score(screen,x,o):
     textx_rect.bottom = screen.get_rect().bottom
     texto_rect.center = screen.get_rect().center
     texto_rect.top = screen.get_rect().top
-
     screen.blit(textx,textx_rect)
     screen.blit(texto,texto_rect)
 
@@ -182,10 +175,17 @@ def draw_winner(screen,winner):
     text = font.render(str(f'Player {winner} has won the game!'), True, (0,128,0))
     text_rect = text.get_rect()
     text_rect.center = screen.get_rect().center
-    print(text_rect,text)
-
     screen.blit(text,text_rect)
 
+def get_user_action(border_size):
+
+    # Get the position of the mouse click
+    pos = pygame.mouse.get_pos()
+    # Convert the mouse position to an action
+    col = (pos[0]-border_size) // SQ_SIZE
+    row = (pos[1]-border_size) // SQ_SIZE
+
+    return (row,col)
     
 if __name__ == "__main__":
     main()
